@@ -7,7 +7,7 @@
 #
 # CREATED:          05/10/2020
 #
-# LAST EDITED:      05/19/2020
+# LAST EDITED:      06/07/2020
 ###
 
 if [[ $UID -ne 0 ]]; then
@@ -15,7 +15,7 @@ if [[ $UID -ne 0 ]]; then
     exit
 fi
 
-rsync -r source/ /var/www/ROOT_DIRECTORY
+rsync -r source/ ROOT_DIRECTORY
 rsync site.conf /etc/nginx/conf.d/CONF_FILENAME
 nginx -s reload
 
