@@ -1,0 +1,14 @@
+{
+  "manifest_version": 2,
+
+  "name": "APPLICATION_NAME",
+  "description": "DESCRIPTION",
+  "version": "1.0",
+
+  "browser_action": {
+   "default_popup": "source/popup.html"
+  },
+  "permissions": [
+      "activeTab"
+   ]
+}
