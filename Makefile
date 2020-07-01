@@ -8,7 +8,7 @@
 #
 # CREATED:	    04/20/2020
 #
-# LAST EDITED:	    06/07/2020
+# LAST EDITED:	    06/30/2020
 ###
 
 sourceDir=$(shell realpath .)/source
@@ -24,15 +24,6 @@ docker:
 		-v "$(nginxConf):/etc/nginx/conf.d/default.conf:ro"\
 		-v "`realpath .`/log:/var/log/nginx" \
 		nginx:latest
-
-install:
-	./initialize.sh
-	npm install
-	mkdir log
-	rm -rf .git
-	git init
-	-git add .
-	git commit -m 'Initialize from WebTemplate Repository'
 
 run: docker
 	python3 LiveReloadServer/ContentChangeNotifier.py $(sourceDir) &
