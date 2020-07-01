@@ -60,47 +60,62 @@ doStaticInstallation() {
         sed -i '' -e "s#$pattern#$replacement#" source/index.html
     fi
 
-    whitelist=("Makefile" "development-site.conf" "source/index.html")
+    whitelist=("Makefile" "development-site.conf" "source/index.html"
+              ".gitignore")
     deleteUnnecessaryFiles "${whitelist[@]}"
 }
 
-# applicationName=$(promptDefault "The name of the application" "WebApp")
-# authorName=$(promptDefault "Your name (the author's name)" "Ethan D. Twardy")
-# description=$(promptDefault "A short description of the application" "")
-# containerName=$(promptDefault "The name of the development container"\
-#                               "test-container")
-# networkName=$(promptDefault "The name of the docker network to connect to"\
-#                             "nginx-net")
-# rootDirectory=$(promptDefault "The root directory of the website"\
-#                               "/var/www/website.com")
-# confFilename=$(promptDefault "The name of the Nginx conf file in deployment"\
-#                              "site.conf")
-# serverName=$(promptDefault "The domain name of the website"\
-#                            "www.website.com")
-# sslCertificate=$(promptDefault "The file path of the SSL Certificate chain"\
-#               "/etc/chain.pem")
-# sslCertificateKey=$(promptDefault "The file path of the SSL Certificate key"\
-#                  "/etc/key.pem")
+doStaticNodeInstallation() {
+    applicationName=$(promptDefault "The name of the application" "WebApp")
+    authorName=$(promptDefault "Your name (the author's name)"\
+                               "Ethan D. Twardy")
+    description=$(promptDefault "A short description of the application" "")
+    containerName=$(promptDefault "The name of the development container"\
+                                  "test-container")
+    networkName=$(promptDefault "The name of the docker network to connect to"\
+                                "nginx-net")
+    rootDirectory=$(promptDefault "The root directory of the website"\
+                                  "/var/www/website.com")
+    confFilename=$(promptDefault "Name of the Nginx conf file in deployment"\
+                                 "site.conf")
+    serverName=$(promptDefault "The domain name of the website"\
+                               "www.website.com")
+    sslCertificate=$(promptDefault "File path of the SSL Certificate chain"\
+                                   "/etc/chain.pem")
+    sslCertificateKey=$(promptDefault "File path of the SSL Certificate key"\
+                                      "/etc/key.pem")
 
-# sed -i '' -e 's/CONTAINER_NAME/'$containerName'/' Makefile
-# sed -i '' -e 's/NETWORK_NAME/'$networkName'/' Makefile
-# sed -i '' -e 's#ROOT_DIRECTORY#'$rootDirectory'#' Makefile
+    sed -i '' -e 's/CONTAINER_NAME/'$containerName'/' Makefile
+    sed -i '' -e 's/NETWORK_NAME/'$networkName'/' Makefile
+    sed -i '' -e 's#ROOT_DIRECTORY#'$rootDirectory'#' Makefile
 
-# sed -i '' -e 's#ROOT_DIRECTORY#'$rootDirectory'#' deploy.sh
-# sed -i '' -e 's/CONF_FILENAME/'$confFilename'/' deploy.sh
+    sed -i '' -e 's#ROOT_DIRECTORY#'$rootDirectory'#' deploy.sh
+    sed -i '' -e 's/CONF_FILENAME/'$confFilename'/' deploy.sh
 
-# sed -i '' -e 's#ROOT_DIRECTORY#'$rootDirectory'#' development-site.conf
+    sed -i '' -e 's#ROOT_DIRECTORY#'$rootDirectory'#' development-site.conf
 
-# sed -i '' -e 's/SERVER_NAME/'$serverName'/' site.conf
-# sed -i '' -e 's#ROOT_DIRECTORY#'$rootDirectory'#' site.conf
-# sed -i '' -e 's#SSL_CERTIFICATE_KEY#'$sslCertificateKey'#' site.conf
-# sed -i '' -e 's#SSL_CERTIFICATE#'$sslCertificate'#' site.conf
+    sed -i '' -e 's/SERVER_NAME/'$serverName'/' site.conf
+    sed -i '' -e 's#ROOT_DIRECTORY#'$rootDirectory'#' site.conf
+    sed -i '' -e 's#SSL_CERTIFICATE_KEY#'$sslCertificateKey'#' site.conf
+    sed -i '' -e 's#SSL_CERTIFICATE#'$sslCertificate'#' site.conf
 
-# sed -i '' -e 's/NAME/'$applicationName'/' package.json
-# sed -i '' -e 's/AUTHOR/'"$authorName"'/' package.json
-# sed -i '' -e 's/DESCRIPTION/'"$description"'/' package.json
+    sed -i '' -e 's/NAME/'$applicationName'/' package.json
+    sed -i '' -e 's/AUTHOR/'"$authorName"'/' package.json
+    sed -i '' -e 's/DESCRIPTION/'"$description"'/' package.json
 
-# npm install
+    sed -i '' -e 's/APPLICATION_NAME/'$applicationName'/' source/index.html
+    if [[ ! -z $description ]]; then
+        pattern="<!--DESCRIPTION-->"
+        replacement="<meta name=\"description\" content=\"$description\" />"
+        sed -i '' -e "s#$pattern#$replacement#" source/index.html
+    fi
+
+    whitelist=("Makefile" "deploy.sh" "package.json" "development-site.conf"
+               "site.conf" "source/index.html source/js/main.js"
+               "webpack.config.js" ".gitignore")
+    deleteUnnecessaryFiles "${whitelist[@]}"
+    npm install
+}
 
 ###############################################################################
 # Initialization Logic
