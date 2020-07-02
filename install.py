@@ -211,15 +211,17 @@ def installDeployStatic(whitelist, parameters, completionHooks):
        'deployment-site.conf')
    sed('DEPLOYMENT_CONF_PATH', deploymentConfPath, 'post-update.hook')
 
+   postUpdateHookUrl = ('https://raw.githubusercontent.com/AmateurECE/'
+                        'WebTemplate/master/post-update.hook')
    script = f"""\
    ssh -p {port} {user}@{host} '
    mkdir -p {path};
    cd {path};
    git init --bare;
    git config --local receive.denyCurrentBranch updateInstead;
+   wget {postUpdateHookUrl} -O .git/hooks/post-update;
+   chmod +x .git/hooks/post-update;
    '"""
-   # wget <rawHookUrl> -O .git/hooks/post-update
-   # chmod +x .git/hooks/post-update
 
    execute(script)
    whitelist.append('deployment-site.conf')
