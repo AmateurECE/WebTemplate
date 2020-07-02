@@ -166,6 +166,8 @@ def installNodePackages(whitelist, parameters):
    npm('install')
 
 # TODO: deployment component (deploy.sh, site.conf)
+# TODO: django component
+# TODO: LiveReloadServer component (Makefile)
 
 ###############################################################################
 # Main
