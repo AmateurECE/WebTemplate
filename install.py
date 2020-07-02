@@ -59,11 +59,12 @@ parameterDefaults = {
 class ParameterManager:
    def __init__(self):
       self.params = {}
+      print('Please enter the following information: ')
 
    def getParameter(self, key):
       if key not in self.params:
          response = input(parameterMessages[key] + ' ['
-                          + parameterDefaults[key] + '] ')
+                          + parameterDefaults[key] + ']: ')
          if response:
             self.params[key] = response
          else:
@@ -126,16 +127,29 @@ def installDevelopmentContainer(whitelist, parameters):
    whitelist.append('log')
    whitelist.append('.gitignore')
 
+def installStaticBase(whitelist, parameters):
+   sed('APPLICATION_NAME', parameters.getParameter(pkApplicationName),
+       'source/index.html')
+
+   description = parameters.getParameter(pkDescription)
+   if description:
+      sed('DESCRIPTION', description, 'source/index.html')
+
+   whitelist.append('source/index.html')
+
 ###############################################################################
 # Main
 ###
 
 def main():
    componentInstallers = {
-       'development-container': {
-          'handler': installDevelopmentContainer,
-          'description': ('Docker container implementing an Nginx'
-                          ' server for development')}
+      'development-container': {
+         'handler': installDevelopmentContainer,
+         'description': ('Docker container implementing an Nginx'
+                         ' server for development')},
+      'static-base': {
+         'handler': installStaticBase,
+         'description': 'Base files for static web pages'},
    }
 
    componentKeys = 'Components:\n'
