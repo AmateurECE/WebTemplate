@@ -138,7 +138,17 @@ def installStaticBase(whitelist, parameters):
 
    whitelist.append('source/index.html')
 
-# TODO: extension component (manifest.json, source/popup.html, source/popup.js)
+def installExtension(whitelist, parameters):
+   applicationName = parameters.getParameter(pkApplicationName)
+   sed('APPLICATION_NAME', applicationName, 'source/popup.html')
+
+   sed('APPLICATION_NAME', applicationName, 'manifest.json')
+   sed('DESCRIPTION', parameters.getParameter(pkDescription), 'manifest.json')
+
+   whitelist.append('manifest.json')
+   whitelist.append('source/popup.html')
+   whitelist.append('source/popup.js')
+
 # TODO: deployment component (deploy.sh, site.conf)
 # TODO: node component (source/js/main.js, webpack.config.js, npm install)
 
@@ -155,6 +165,9 @@ def main():
       'static-base': {
          'handler': installStaticBase,
          'description': 'Base files for static web pages'},
+      'extension': {
+         'handler': installExtension,
+         'description': 'Base files for Chrome Extensions'},
    }
 
    componentKeys = 'Components:\n'
