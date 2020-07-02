@@ -86,20 +86,23 @@ def git(command):
       raise SystemError('git did not exit successfully.')
    return
 
+def isWhitelisted(whitelist, path):
+   for entry in whitelist:
+      if os.path.realpath(path) == os.path.realpath(entry):
+         return True
+
 def deleteUnnecessaryFiles(whitelist):
    for path, directories, files in os.walk('.', topdown=False):
       for directory in directories:
-         if not directory.listdir(directory):
-            os.rmdir(directory)
+         joinedPath = os.path.join(path, directory)
+         if not os.listdir(joinedPath) \
+            and not isWhitelisted(whitelist, joinedPath):
+            os.rmdir(os.path.join(path, directory))
 
       for filename in files:
-         whitelisted = False
-         for entry in whitelist:
-            if entry in os.path.join(path, filename):
-               whitelisted = True
-               break
-         if not whitelisted:
-            os.remove(os.path.join(path, filename))
+         joinedPath = os.path.join(path, filename)
+         if not isWhitelisted(whitelist, joinedPath):
+            os.remove(joinedPath)
 
 ###############################################################################
 # Component Installers
@@ -114,9 +117,14 @@ def installDevelopmentContainer(whitelist, parameters):
    sed('ROOT_DIRECTORY', rootDirectory, 'Makefile')
    sed('ROOT_DIRECTORY', rootDirectory, 'development-site.conf')
 
+   # Initialize component files
+   os.mkdir('log')
+
    # Add the files to the whitelist
    whitelist.append('Makefile')
    whitelist.append('development-site.conf')
+   whitelist.append('log')
+   whitelist.append('.gitignore')
 
 ###############################################################################
 # Main
@@ -145,6 +153,9 @@ def main():
          componentInstallers[key](whitelist, parameters)
 
    deleteUnnecessaryFiles(whitelist)
+   git('init')
+   git('add .')
+   git('commit -m "Initialize from WebTemplate"')
 
 if __name__ == '__main__':
     main()
