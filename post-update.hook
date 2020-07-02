@@ -1,0 +1,25 @@
+#!/bin/sh
+###############################################################################
+# NAME:             post-update.hook
+#
+# AUTHOR:           Ethan D. Twardy <edtwardy@mtu.edu>
+#
+# DESCRIPTION:      This is part of the deploy-static component. This hook runs
+#                   whenever an update is performed in the remote repository.
+#                   It updates the Nginx conf file for this web application and
+#                   then issues an Nginx reload.
+#
+# CREATED:          07/02/2020
+#
+# LAST EDITED:      07/02/2020
+###
+
+confPath=DEPLOYMENT_CONF_PATH
+cp deployment-site.conf $confPath
+if [ $(dirname $confPath) != /etc/nginx/conf.d ] \
+   && [ ! -f /etc/nginx/sites-enabled/$(basename $confPath) ]; then
+    ln -s $confPath /etc/nginx/sites-enabled/$(basename $confPath)
+fi
+exec nginx -s reload
+
+###############################################################################

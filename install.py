@@ -7,7 +7,7 @@
 #
 # CREATED:          07/01/2020
 #
-# LAST EDITED:      07/01/2020
+# LAST EDITED:      07/02/2020
 ###
 
 import argparse
@@ -25,6 +25,12 @@ pkConfFilename = 'conf-filename'
 pkServerName = 'server-name'
 pkSSLCertificate = 'ssl-certificate'
 pkSSLCertificateKey = 'ssl-certificate-key'
+pkRemoteRepositoryPath = 'remote-repository-path'
+pkRemoteRepositoryName = 'remote-repository-name'
+pkRemoteUser = 'remote-user'
+pkRemoteHost = 'remote-host'
+pkRemotePort = 'remote-port'
+pkDeploymentConfPath = 'deployment-conf-path'
 
 parameterMessages = {
    pkApplicationName: 'The name of the application',
@@ -37,6 +43,12 @@ parameterMessages = {
    pkServerName: 'The domain name of the website',
    pkSSLCertificate: 'File path of the SSL Certificate chain',
    pkSSLCertificateKey: 'File path of the SSL Certificate key',
+   pkRemoteRepositoryPath: 'Path of the repository on the remote',
+   pkRemoteRepositoryName: 'Name of the remote in the local repository',
+   pkRemoteUser: 'Name of the remote user',
+   pkRemoteHost: 'Remote hostname to connect to',
+   pkRemotePort: 'Port to connect to on the remote',
+   pkDeploymentConfPath: 'The path of the Nginx conf file in production',
 }
 
 parameterDefaults = {
@@ -50,6 +62,10 @@ parameterDefaults = {
    pkServerName: 'www.website.com',
    pkSSLCertificate: '/etc/chain.pem',
    pkSSLCertificateKey: '/etc/key.pem',
+   pkRemoteRepositoryName: 'deployment',
+   pkRemoteUser: 'edtwardy',
+   pkRemoteHost: '192.168.1.60',
+   pkRemotePort: 5000,
 }
 
 ###############################################################################
@@ -109,12 +125,12 @@ def deleteUnnecessaryFiles(whitelist):
 # Component Installers
 ###
 
-def installDevelopmentContainer(whitelist, parameters):
+def installDevelopmentContainer(whitelist, parameters, completionHooks):
    # Replace parameters in the files
    sed('CONTAINER_NAME', parameters.getParameter(pkContainerName), 'Makefile')
    sed('NETWORK_NAME', parameters.getParameter(pkNetworkName), 'Makefile')
 
-   rootDirectory = parameters.getParameter(pkRootDirectory)
+   rootDirectory = '/var/dev/container.com' # It doesn't matter
    sed('ROOT_DIRECTORY', rootDirectory, 'Makefile')
    sed('ROOT_DIRECTORY', rootDirectory, 'development-site.conf')
 
@@ -127,7 +143,7 @@ def installDevelopmentContainer(whitelist, parameters):
    whitelist.append('log')
    whitelist.append('.gitignore')
 
-def installStaticBase(whitelist, parameters):
+def installStaticBase(whitelist, parameters, completionHooks):
    sed('APPLICATION_NAME', parameters.getParameter(pkApplicationName),
        'source/index.html')
 
@@ -138,7 +154,7 @@ def installStaticBase(whitelist, parameters):
 
    whitelist.append('source/index.html')
 
-def installExtension(whitelist, parameters):
+def installExtension(whitelist, parameters, completionHooks):
    applicationName = parameters.getParameter(pkApplicationName)
    sed('APPLICATION_NAME', applicationName, 'source/popup.html')
 
@@ -149,7 +165,7 @@ def installExtension(whitelist, parameters):
    whitelist.append('source/popup.html')
    whitelist.append('source/popup.js')
 
-def installNodePackages(whitelist, parameters):
+def installNodePackages(whitelist, parameters, completionHooks):
    sed('APPLICATION_NAME', parameters.getParameter(pkApplicationName),
        'package.json')
    sed('DESCRIPTION', parameters.getParameter(pkDescription), 'package.json')
@@ -165,7 +181,50 @@ def installNodePackages(whitelist, parameters):
 
    npm('install')
 
-# TODO: deployment component (deploy.sh, site.conf)
+def installDeployStatic(whitelist, parameters, completionHooks):
+   host = parameters.getParameter(pkRemoteHost)
+   user = parameters.getParameter(pkRemoteUser)
+   port = parameters.getParameter(pkRemotePort)
+
+   applicationName = parameters.getParameter(pkApplicationName)
+   parameterDefaults[pkRemoteRepositoryPath] = \
+      f'/home/{user}/Git/Serve/{applicationName}'
+   path = parameters.getParameter(pkRemoteRepositoryPath)
+   parameterDefaults[pkRootDirectory] = \
+      f'{parameterDefaults[pkRemoteRepositoryPath]}/source'
+   rootDirectory = parameters.getParameter(pkRootDirectory)
+   parameterDefaults[pkDeploymentConfPath] = \
+      f'/etc/nginx/sites-enabled/{applicationName.lower()}'
+   deploymentConfPath = parameters.getParameter(pkDeploymentConfPath)
+
+   # Create hook to add production remote after git reinitialization
+   remote = parameters.getParameter(pkRemoteRepositoryName)
+   remoteUri = f'ssh://{user}@{host}:{port}{path}'
+   completionHooks.append(lambda: git(f'remote add {remote} {remoteUri}'))
+
+   sed('SERVER_NAME', parameters.getParameter(pkServerName),
+       'deployment-site.conf')
+   sed('ROOT_DIRECTORY', rootDirectory, 'deployment-site.conf')
+   sed('SSL_CERTIFICATE', parameters.getParameter(pkSSLCertificate),
+       'deployment-site.conf')
+   sed('SSL_CERTIFICATE_KEY', parameters.getParameter(pkSSLCertificateKey),
+       'deployment-site.conf')
+   sed('DEPLOYMENT_CONF_PATH', deploymentConfPath, 'post-update.hook')
+
+   script = f"""\
+   ssh -p {port} {user}@{host} '
+   mkdir -p {path};
+   cd {path};
+   git init --bare;
+   git config --local receive.denyCurrentBranch updateInstead;
+   '"""
+   # wget <rawHookUrl> -O .git/hooks/post-update
+   # chmod +x .git/hooks/post-update
+
+   execute(script)
+   whitelist.append('deployment-site.conf')
+
+# TODO: pre-commit hook to generate bundle.js
 # TODO: django component
 # TODO: LiveReloadServer component (Makefile)
 
@@ -188,6 +247,9 @@ def main():
       'node-packages': {
          'handler': installNodePackages,
          'description': 'Webpack and Babel, for bundling js applications'},
+      'deploy-static': {
+         'handler': installDeployStatic,
+         'description': 'Infrastructure for deploying static web pages'},
    }
 
    componentKeys = 'Components:\n'
@@ -210,14 +272,17 @@ def main():
 
    whitelist = []
    parameters = ParameterManager()
+   hooks = []
    for (key, val) in config.items(arguments.configuration):
       if val:
-         componentInstallers[key]['handler'](whitelist, parameters)
+         componentInstallers[key]['handler'](whitelist, parameters, hooks)
 
    deleteUnnecessaryFiles(whitelist)
    git('init')
    git('add .')
    git('commit -m "Initialize from WebTemplate"')
+   for function in hooks:
+      function()
 
 if __name__ == '__main__':
     main()
