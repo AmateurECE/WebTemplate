@@ -71,25 +71,25 @@ class ParameterManager:
             self.params[key] = parameterDefaults[key]
       return self.params[key]
 
-def sed(pattern, replacement, filename):
-   cmd = "sed -i '' -e 's#" + pattern + "#" + replacement + "#' " + filename
-   pipe = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+def execute(command):
+   pipe = subprocess.Popen(command, shell=True)
    pipe.wait()
    if pipe.returncode != 0:
-      raise SystemError('sed did not exit successfully.')
+      raise SystemError()
    return
 
+def sed(pattern, replacement, filename):
+   execute("sed -i '' -e 's#" + pattern + "#" + replacement + "#' " + filename)
+
 def git(command):
-   pipe = subprocess.Popen('git ' + command, shell=True,
-                           stdout=subprocess.PIPE)
-   pipe.wait()
-   if pipe.returncode != 0:
-      raise SystemError('git did not exit successfully.')
-   return
+   execute('git ' + command)
+
+def npm(command):
+   execute('npm ' + command)
 
 def isWhitelisted(whitelist, path):
    for entry in whitelist:
-      if os.path.realpath(path) == os.path.realpath(entry):
+      if os.path.realpath(entry) in os.path.realpath(path):
          return True
 
 def deleteUnnecessaryFiles(whitelist):
@@ -149,8 +149,23 @@ def installExtension(whitelist, parameters):
    whitelist.append('source/popup.html')
    whitelist.append('source/popup.js')
 
+def installNodePackages(whitelist, parameters):
+   sed('APPLICATION_NAME', parameters.getParameter(pkApplicationName),
+       'package.json')
+   sed('DESCRIPTION', parameters.getParameter(pkDescription), 'package.json')
+   sed('AUTHOR', parameters.getParameter(pkAuthorName), 'package.json')
+
+   whitelist.append('source/js/main.js')
+   whitelist.append('webpack.config.js')
+   whitelist.append('package-lock.json')
+   whitelist.append('package.json')
+   whitelist.append('node_modules')
+   if '.gitignore' not in whitelist:
+      whitelist.append('.gitignore')
+
+   npm('install')
+
 # TODO: deployment component (deploy.sh, site.conf)
-# TODO: node component (source/js/main.js, webpack.config.js, npm install)
 
 ###############################################################################
 # Main
@@ -168,6 +183,9 @@ def main():
       'extension': {
          'handler': installExtension,
          'description': 'Base files for Chrome Extensions'},
+      'node-packages': {
+         'handler': installNodePackages,
+         'description': 'Webpack and Babel, for bundling js applications'},
    }
 
    componentKeys = 'Components:\n'

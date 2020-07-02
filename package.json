@@ -1,5 +1,5 @@
 {
-    "name": "NAME",
+    "name": "APPLICATION_NAME",
     "version": "1.0.0",
     "description": "DESCRIPTION",
     "main": "source/js/main.js",
