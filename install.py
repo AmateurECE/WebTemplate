@@ -131,15 +131,25 @@ def installDevelopmentContainer(whitelist, parameters):
 ###
 
 def main():
-   parser = argparse.ArgumentParser()
+   componentInstallers = {
+       'development-container': {
+          'handler': installDevelopmentContainer,
+          'description': ('Docker container implementing an Nginx'
+                          ' server for development')}
+   }
+
+   componentKeys = 'Components:\n'
+   for key in componentInstallers:
+      componentKeys += '  ' + key + ': ' \
+         + componentInstallers[key]['description'] + '\n'
+
+   parser = argparse.ArgumentParser(
+      formatter_class=argparse.RawDescriptionHelpFormatter,
+      epilog=componentKeys)
    parser.add_argument('configuration',
                        help=('The configuration to install '
                              'from the template-config.ini file.'))
    arguments = parser.parse_args()
-
-   componentInstallers = {
-       'development-container': installDevelopmentContainer
-   }
 
    config = configparser.ConfigParser()
    configurationFile = 'template-config.ini'
@@ -150,7 +160,7 @@ def main():
    parameters = ParameterManager()
    for (key, val) in config.items(arguments.configuration):
       if val:
-         componentInstallers[key](whitelist, parameters)
+         componentInstallers[key]['handler'](whitelist, parameters)
 
    deleteUnnecessaryFiles(whitelist)
    git('init')
