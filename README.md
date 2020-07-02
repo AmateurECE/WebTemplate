@@ -44,10 +44,10 @@ Must have `make` installed.
 3. node-packages: Must have `npm` installed.
 4. extension: None.
 5. deploy-static: See functionality of this component below. Must have `ssh`
-installed on local and remote machine, and `git`, `wget` and Nginx installed on
-the remote machine. The install script assumes the remote machine is running
-either MacOS or some flavor of Linux. Cygwin may be supported by default, but
-this is not tested.
+installed on local and remote machine, and `git`, `wget`, `sed` and Nginx
+installed on the remote machine. The install script assumes the remote machine
+is running some flavor of Linux. Cygwin may be supported by default, but this
+is not tested.
 
 ## Using the deploy-static Component
 
@@ -55,8 +55,8 @@ This component allows the user to deploy website changes by pushing refs to a
 remote repository. The name of the remote can be selected at install time, so
 the user may also maintain another remote repository.
 
-The install script assumes the remote machine is running either MacOS or some
-flavor of Linux. Cygwin may be supported by default, but this is not tested.
+The install script assumes the remote machine is running some flavor of Linux.
+Cygwin may be supported by default, but this is not tested.
 
 The logged in user (on the remote machine) must also have write permissions for
 the selected directory, write permissions for the file `/etc/nginx/nginx.conf`,

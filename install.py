@@ -65,7 +65,7 @@ parameterDefaults = {
    pkRemoteRepositoryName: 'deployment',
    pkRemoteUser: 'edtwardy',
    pkRemoteHost: '192.168.1.60',
-   pkRemotePort: 5000,
+   pkRemotePort: '5000',
 }
 
 ###############################################################################
@@ -209,7 +209,6 @@ def installDeployStatic(whitelist, parameters, completionHooks):
        'deployment-site.conf')
    sed('SSL_CERTIFICATE_KEY', parameters.getParameter(pkSSLCertificateKey),
        'deployment-site.conf')
-   sed('DEPLOYMENT_CONF_PATH', deploymentConfPath, 'post-update.hook')
 
    postUpdateHookUrl = ('https://raw.githubusercontent.com/AmateurECE/'
                         'WebTemplate/master/post-update.hook')
@@ -219,8 +218,9 @@ def installDeployStatic(whitelist, parameters, completionHooks):
    cd {path};
    git init --bare;
    git config --local receive.denyCurrentBranch updateInstead;
-   wget {postUpdateHookUrl} -O .git/hooks/post-update;
-   chmod +x .git/hooks/post-update;
+   wget {postUpdateHookUrl} -O hooks/post-update;
+   sed -i -e s#DEPLOYMENT_CONF_PATH#{deploymentConfPath}# hooks/post-update;
+   chmod +x hooks/post-update;
    '"""
 
    execute(script)
