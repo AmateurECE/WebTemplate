@@ -133,9 +133,14 @@ def installStaticBase(whitelist, parameters):
 
    description = parameters.getParameter(pkDescription)
    if description:
-      sed('DESCRIPTION', description, 'source/index.html')
+      sed('<!--DESCRIPTION-->', '<meta name="description" content="'
+          + description + '" />', 'source/index.html')
 
    whitelist.append('source/index.html')
+
+# TODO: extension component (manifest.json, source/popup.html, source/popup.js)
+# TODO: deployment component (deploy.sh, site.conf)
+# TODO: node component (source/js/main.js, webpack.config.js, npm install)
 
 ###############################################################################
 # Main
