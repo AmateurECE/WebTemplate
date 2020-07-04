@@ -2,7 +2,7 @@
     "name": "APPLICATION_NAME",
     "version": "1.0.0",
     "description": "DESCRIPTION",
-    "main": "source/js/main.js",
+    "main": "static/js/main.js",
     "scripts": {
         "build": "webpack",
         "test": "echo \"Error: no test specified\" && exit 1"

@@ -70,7 +70,7 @@ Nginx. In order to enable live reloading for an HTML file, add the following to
 the bottom of the `body` in your file:
 
 ```
-<script src="source/js/debug.js"></script>
+<script src="static/js/debug.js"></script>
 ```
 
 Navigate to the webpage in your browser and concurrently open the HTML file in

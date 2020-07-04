@@ -7,7 +7,7 @@
 #
 # CREATED:          07/01/2020
 #
-# LAST EDITED:      07/02/2020
+# LAST EDITED:      07/04/2020
 ###
 
 import argparse
@@ -145,25 +145,25 @@ def installDevelopmentContainer(whitelist, parameters, completionHooks):
 
 def installStaticBase(whitelist, parameters, completionHooks):
    sed('APPLICATION_NAME', parameters.getParameter(pkApplicationName),
-       'source/index.html')
+       'static/index.html')
 
    description = parameters.getParameter(pkDescription)
    if description:
       sed('<!--DESCRIPTION-->', '<meta name="description" content="'
-          + description + '" />', 'source/index.html')
+          + description + '" />', 'static/index.html')
 
-   whitelist.append('source/index.html')
+   whitelist.append('static/index.html')
 
 def installExtension(whitelist, parameters, completionHooks):
    applicationName = parameters.getParameter(pkApplicationName)
-   sed('APPLICATION_NAME', applicationName, 'source/popup.html')
+   sed('APPLICATION_NAME', applicationName, 'extension/popup.html')
 
    sed('APPLICATION_NAME', applicationName, 'manifest.json')
    sed('DESCRIPTION', parameters.getParameter(pkDescription), 'manifest.json')
 
    whitelist.append('manifest.json')
-   whitelist.append('source/popup.html')
-   whitelist.append('source/popup.js')
+   whitelist.append('extension/popup.html')
+   whitelist.append('extension/popup.js')
 
 def installNodePackages(whitelist, parameters, completionHooks):
    sed('APPLICATION_NAME', parameters.getParameter(pkApplicationName),
@@ -171,7 +171,7 @@ def installNodePackages(whitelist, parameters, completionHooks):
    sed('DESCRIPTION', parameters.getParameter(pkDescription), 'package.json')
    sed('AUTHOR', parameters.getParameter(pkAuthorName), 'package.json')
 
-   whitelist.append('source/js/main.js')
+   whitelist.append('static/js/main.js')
    whitelist.append('webpack.config.js')
    whitelist.append('package-lock.json')
    whitelist.append('package.json')
@@ -226,8 +226,17 @@ def installDeployStatic(whitelist, parameters, completionHooks):
    execute(script)
    whitelist.append('deployment-site.conf')
 
+def installDjangoApp(whitelist, parameters, completionHooks):
+   # TODO: Modify static/index.html to create a template
+   #   This will require moving static/index.html to template/app/index.html,
+   #   and modifying the file to make it extend a base template.
+   appName = parameters.getParameter(pkApplicationName)
+   pwd = os.path.realpath('.')
+   completionHooks.extend([
+      lambda: execute(f'django-admin startapp {appName} {pwd}')
+   ])
+
 # TODO: pre-commit hook to generate bundle.js
-# TODO: django component
 # TODO: LiveReloadServer component (Makefile)
 
 ###############################################################################
@@ -252,6 +261,9 @@ def main():
       'deploy-static': {
          'handler': installDeployStatic,
          'description': 'Infrastructure for deploying static web pages'},
+      'django-app': {
+         'handler': installDjangoApp,
+         'description': 'Django Application template.'}
    }
 
    componentKeys = 'Components:\n'
@@ -281,10 +293,10 @@ def main():
 
    deleteUnnecessaryFiles(whitelist)
    git('init')
-   git('add .')
-   git('commit -m "Initialize from WebTemplate"')
    for function in hooks:
       function()
+   git('add .')
+   git('commit -m "Initialize from WebTemplate"')
 
 if __name__ == '__main__':
     main()
