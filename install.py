@@ -7,7 +7,7 @@
 #
 # CREATED:          07/01/2020
 #
-# LAST EDITED:      07/04/2020
+# LAST EDITED:      07/12/2020
 ###
 
 import argparse
@@ -21,7 +21,6 @@ pkDescription = 'description'
 pkContainerName = 'container-name'
 pkNetworkName = 'network-name'
 pkRootDirectory = 'root-directory'
-pkConfFilename = 'conf-filename'
 pkServerName = 'server-name'
 pkSSLCertificate = 'ssl-certificate'
 pkSSLCertificateKey = 'ssl-certificate-key'
@@ -30,7 +29,6 @@ pkRemoteRepositoryName = 'remote-repository-name'
 pkRemoteUser = 'remote-user'
 pkRemoteHost = 'remote-host'
 pkRemotePort = 'remote-port'
-pkDeploymentConfPath = 'deployment-conf-path'
 
 parameterMessages = {
    pkApplicationName: 'The name of the application',
@@ -39,7 +37,6 @@ parameterMessages = {
    pkContainerName: 'The name of the development container',
    pkNetworkName: 'The name of the docker network to connect to',
    pkRootDirectory: 'The root directory of the website',
-   pkConfFilename: 'Name of the Nginx conf file in deployment',
    pkServerName: 'The domain name of the website',
    pkSSLCertificate: 'File path of the SSL Certificate chain',
    pkSSLCertificateKey: 'File path of the SSL Certificate key',
@@ -48,7 +45,6 @@ parameterMessages = {
    pkRemoteUser: 'Name of the remote user',
    pkRemoteHost: 'Remote hostname to connect to',
    pkRemotePort: 'Port to connect to on the remote',
-   pkDeploymentConfPath: 'The path of the Nginx conf file in production',
 }
 
 parameterDefaults = {
@@ -58,7 +54,6 @@ parameterDefaults = {
    pkContainerName: 'test-container',
    pkNetworkName: 'nginx-net',
    pkRootDirectory: '/var/www/website.com',
-   pkConfFilename: 'site.conf',
    pkServerName: 'www.website.com',
    pkSSLCertificate: '/etc/chain.pem',
    pkSSLCertificateKey: '/etc/key.pem',
@@ -193,9 +188,6 @@ def installDeployStatic(whitelist, parameters, completionHooks):
    parameterDefaults[pkRootDirectory] = \
       f'{parameterDefaults[pkRemoteRepositoryPath]}/source'
    rootDirectory = parameters.getParameter(pkRootDirectory)
-   parameterDefaults[pkDeploymentConfPath] = \
-      f'/etc/nginx/sites-enabled/{applicationName.lower()}'
-   deploymentConfPath = parameters.getParameter(pkDeploymentConfPath)
 
    # Create hook to add production remote after git reinitialization
    remote = parameters.getParameter(pkRemoteRepositoryName)
@@ -210,21 +202,23 @@ def installDeployStatic(whitelist, parameters, completionHooks):
    sed('SSL_CERTIFICATE_KEY', parameters.getParameter(pkSSLCertificateKey),
        'deployment-site.conf')
 
-   postUpdateHookUrl = ('https://raw.githubusercontent.com/AmateurECE/'
-                        'WebTemplate/master/post-update.hook')
+   # If there is an update hook, save it.
+   hookCommand = ''
+   if open('post-update.hook', 'r') as postUpdateHook:
+      hookCommand = 'echo exec ../post-update.hook > .git/hooks/post-update;
+      chmod +x .git/hooks/post-update;'
    script = f"""\
    ssh -p {port} {user}@{host} '
    mkdir -p {path};
    cd {path};
-   git init --bare;
+   git init;
    git config --local receive.denyCurrentBranch updateInstead;
-   wget {postUpdateHookUrl} -O hooks/post-update;
-   sed -i -e s#DEPLOYMENT_CONF_PATH#{deploymentConfPath}# hooks/post-update;
-   chmod +x hooks/post-update;
+   {hookCommand}
    '"""
 
    execute(script)
    whitelist.append('deployment-site.conf')
+   whitelist.append('post-update.hook')
 
 def installDjangoApp(whitelist, parameters, completionHooks):
    # TODO: Modify static/index.html to create a template
@@ -238,6 +232,13 @@ def installDjangoApp(whitelist, parameters, completionHooks):
 
 # TODO: pre-commit hook to generate bundle.js
 # TODO: LiveReloadServer component (Makefile)
+
+def installMiddleman(whitelist, parameters, completionHooks):
+   """Install the Middleman component"""
+   completionHooks.extend([
+      lambda: execute('middleman init'),
+      lambda: execute('echo "activate :relative_assets" >> config.rb')
+   ])
 
 ###############################################################################
 # Main
@@ -263,7 +264,10 @@ def main():
          'description': 'Infrastructure for deploying static web pages'},
       'django-app': {
          'handler': installDjangoApp,
-         'description': 'Django Application template.'}
+         'description': 'Django Application template.'},
+      'middleman': {
+         'handler': installMiddleman,
+         'description': 'Middleman project initialization'},
    }
 
    componentKeys = 'Components:\n'

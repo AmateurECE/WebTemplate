@@ -8,10 +8,10 @@
 #
 # CREATED:	    04/20/2020
 #
-# LAST EDITED:	    06/30/2020
+# LAST EDITED:	    07/12/2020
 ###
 
-sourceDir=$(shell realpath .)/source
+sourceDir=$(shell realpath .)/static
 nginxConf=$(shell realpath .)/development-site.conf
 containerName=CONTAINER_NAME
 networkName=NETWORK_NAME

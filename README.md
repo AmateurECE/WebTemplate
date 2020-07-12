@@ -48,6 +48,8 @@ installed on local and remote machine, and `git`, `wget`, `sed` and Nginx
 installed on the remote machine. The install script assumes the remote machine
 is running some flavor of Linux. Cygwin may be supported by default, but this
 is not tested.
+6. middleman: Must have a working ruby distribution and the middleman bundle
+installed.
 
 ## Using the deploy-static Component
 
@@ -58,9 +60,23 @@ the user may also maintain another remote repository.
 The install script assumes the remote machine is running some flavor of Linux.
 Cygwin may be supported by default, but this is not tested.
 
-The logged in user (on the remote machine) must also have write permissions for
-the selected directory, write permissions for the file `/etc/nginx/nginx.conf`,
-and have permissions to run `nginx -s reload`.
+The user may take advantage of this component by following these steps:
+1. Install the component by using the install script and following the prompts.
+2. Edit the `post-update.hook` and `deployment-site.conf` files. The default
+Nginx conf file may not be suitable. For example, all of my sites are deployed
+as locations within my domain, so I would rewrite this file to contain:
+```
+location /myapp/ {
+    alias /home/edtwardy/Git/Serve/MyApp/;
+    index index.html
+}
+```
+3. Commit and push these changes. The hook will require no further
+configuration.
+4. Log into the server using your credentials, and manually install the Nginx
+configuration. For example, I install it to
+/etc/nginx/conf.d/location.d/myapp.conf.
+5. Reload Nginx.
 
 ## Using the Live Reloading Server
 
@@ -80,3 +96,11 @@ your newest changes. Pretty neat!
 
 *Note*: The `development-container` component must also be installed, or the
 live reloading server will not function.
+
+## Using the Middleman component
+
+The Middleman component should not be used with other components, except
+the `deploy-static` component. It may be possible to install the
+`django-app` component alongside, but that is currently untested.
+
+// TODO: Test installation of django-app alongside middleman
