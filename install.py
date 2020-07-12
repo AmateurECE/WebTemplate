@@ -1,3 +1,4 @@
+
 ###############################################################################
 # NAME:             install.py
 #
@@ -204,9 +205,9 @@ def installDeployStatic(whitelist, parameters, completionHooks):
 
    # If there is an update hook, save it.
    hookCommand = ''
-   if open('post-update.hook', 'r') as postUpdateHook:
-      hookCommand = 'echo exec ../post-update.hook > .git/hooks/post-update;
-      chmod +x .git/hooks/post-update;'
+   with open('post-update.hook', 'r') as postUpdateHook:
+      hookCommand = """echo exec ../post-update.hook > .git/hooks/post-update;
+                     chmod +x .git/hooks/post-update;"""
    script = f"""\
    ssh -p {port} {user}@{host} '
    mkdir -p {path};
